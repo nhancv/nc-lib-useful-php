@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Test DHIS connector</title>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/tableauwdc-1.1.0.js"></script>
+    <script>
+        (function () {
+
+            var myConnector = tableau.makeConnector();
+
+            myConnector.init = function () {
+                tableau.connectionName = 'JSON data';
+                tableau.initCallback();
+            };
+
+            myConnector.getColumnHeaders = function () {
+                _retrieveJsonData(function (tableData) {
+                    var header = tableData.header;
+                    console.log(header);
+                    tableau.headersCallback(header.names, header.types);
+                });
+            };
+
+            myConnector.getTableData = function (lastRecordToken) {
+                _retrieveJsonData(function (tableData) {
+                    var rowData = tableData.rowData;
+                    console.log(rowData);
+                    tableau.dataCallback(rowData, rowData.length.toString(), false);
+                });
+            };
+
+            tableau.registerConnector(myConnector);
+        })();
+
+        function _retrieveJsonData(retrieveDataCallback) {
+            retrieveDataCallback(JSON.parse(tableau.connectionData));
+        }
+
+        function getBasicAu() {
+            var form_data = {
+                url: "http://178.79.144.205:9080/dhis_scale/api/analytics?dimension=dx:-1;m4l6dkZE3Tb;PAf747u9aIm;BHbkFDZuQCv;egvQwyhTts0;jM9CwghARC1;Umgf9D3eTeg&filter=pe:-1;201404;201405&dimension=ou:-1;oxN3xXclTRE;pTRU2S7lfqh;vq35KBJgWNw;JMsKdUoy81t;fOnIc7JXX27;OwM7KfY9nkh;dU4n3GrNwaj;nbBQtsv2YQq;ZCRpMKQM7eW;P3JQpPI8wmi;z79RFezryPa;a7spx96Mmes;qH6uzfI6648;KWCXB07lM1N;T5vmOf1Cx0U;XDpbaCd3w9w;OCD615gl2y1;zkV6pxczaCF;jlinpH2sARR;RkSp1KAwG99;mm1Eqiu33TX;efohxmoicar;Y9PJfx2ullk;X3ppq91QGe5;NMyXnDEhScT;FQylqKS8jUm;daw9uBBcaLB;yqePPTMv1Y5;pMJj8wMUEqa;iPNWmV489sc&includeDescendants=true",
+                u: "admin",
+                p: "district"
+            };
+            $.ajax({
+                type: 'POST',
+                url: "../mbasic_au.php",
+                dataType: 'json',
+                data: form_data,
+                cache: false
+            })
+                    .done(function (response) {
+                        console.log(response);
+                        var jsonStr = response;
+                        var headerNameArr = ["Organization"];
+                        var headerTypesArr = ["String"];
+                        var dataTables = [];
+                        for (var i = 0; i < jsonStr.metaData.dx.length; i++) {
+                            headerNameArr.push(jsonStr.metaData.names[jsonStr.metaData.dx[i]]);
+                            headerTypesArr.push("float");
+                        }
+
+                        var realLength = jsonStr.rows.length / jsonStr.metaData.dx.length;
+                        for (var i = 0; i < realLength; i++) {
+                            var item = [jsonStr.metaData.names[jsonStr.rows[i][1]]]
+                            for (var j = 0; j < jsonStr.metaData.dx.length; j++) {
+                                item.push(jsonStr.rows[i + j * realLength][2]);
+                            }
+                            dataTables.push(item);
+                        }
+
+                        var header = {"names": headerNameArr, types: headerTypesArr};
+                        var conData = {"header": header, "rowData": dataTables};
+
+                        tableau.connectionData = JSON.stringify(conData);
+                        tableau.submit();
+
+                    })
+        }
+    </script>
+</head>
+<body>
+<p>
+    Api sample:<br>
+    http://178.79.144.205:9080/dhis_scale/api/analytics?dimension=dx:-1;m4l6dkZE3Tb;PAf747u9aIm;BHbkFDZuQCv;egvQwyhTts0;jM9CwghARC1;Umgf9D3eTeg&filter=pe:-1;201404;201405&dimension=ou:-1;oxN3xXclTRE;pTRU2S7lfqh;vq35KBJgWNw;JMsKdUoy81t;fOnIc7JXX27;OwM7KfY9nkh;dU4n3GrNwaj;nbBQtsv2YQq;ZCRpMKQM7eW;P3JQpPI8wmi;z79RFezryPa;a7spx96Mmes;qH6uzfI6648;KWCXB07lM1N;T5vmOf1Cx0U;XDpbaCd3w9w;OCD615gl2y1;zkV6pxczaCF;jlinpH2sARR;RkSp1KAwG99;mm1Eqiu33TX;efohxmoicar;Y9PJfx2ullk;X3ppq91QGe5;NMyXnDEhScT;FQylqKS8jUm;daw9uBBcaLB;yqePPTMv1Y5;pMJj8wMUEqa;iPNWmV489sc&includeDescendants=true
+</p>
+<br>
+
+<button id="btnJSCal" onclick="getBasicAu();">Get example</button>
+<br>
+
+
+</body>
+</html>
