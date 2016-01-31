@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <title>BasicAu</title>
+    <link rel="stylesheet" href="css/style.css" type="text/css" media="screen">
+    <script type="text/javascript" src="js/jquery.js"></script>
+</head>
+<body>
+<form action="../mbasic_au.php" method="post">
+    Url: <br><input id="url" type="text" name="url"><br>
+    Username: <br><input id="u" type="text" name="u"><br>
+    Password: <br><input id="p" type="password" name="p"><br>
+    <input type="submit" name="mySubmit" value="Submit">
+</form>
+<br>
+<script>
+    function getBasicAu() {
+        var form_data = {
+            url: $("#url").val(),
+            u: $("#u").val(),
+            p: $("#p").val()
+        };
+        $.ajax({
+            type: 'POST',
+            url: "../mbasic_au.php",
+            dataType: 'json',
+            data: form_data,
+            cache: false
+        })
+                .done(function (response) {
+                    console.log(response);
+                    var text = JSON.stringify(response);
+                    document.body.innerHTML = text;
+                })
+    };
+</script>
+<button id="btnJSCal" onclick="getBasicAu();">CallwithJS</button><br>
+</body>
+</html>
