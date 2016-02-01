@@ -1,5 +1,15 @@
 /*
 NhanCao Fri Jan 29 2016
 */
+body {
+  background-color: #708090; }
+
+#ipform {
+  width: 500px;
+  height: auto;
+  margin: 5% auto; }
+
+a {
+  color: #DFE2DB; }
 
 /*# sourceMappingURL=style.css.map */

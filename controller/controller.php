@@ -6,12 +6,13 @@
  * Date: 1/31/16
  * Time: 2:54 PM
  */
+require_once dirname(__FILE__) . '/function/json_encode_utf8.php';
+
 class controller
 {
+    public static $response = array();
     public static function executeBasicAu($remote_url, $username, $password)
     {
-
-        // Create a stream
         $opts = array(
             'http' => array(
                 'method' => "GET",
@@ -20,11 +21,18 @@ class controller
         );
 
         $context = stream_context_create($opts);
+        $json = @file_get_contents($remote_url, false, $context);
+        if ($json === false) {
+            if (strpos($http_response_header[0], 'HTTP/1.1 401 Unauthorized') !== false) {
+                $response["message"] = "Unauthorized";
+            }else{
+                $response["message"] = "Not support this format";
+            }
+            echo json_encode($response);
+        } else {
+            print($json);
+        }
 
-        // Open the file using the HTTP headers set above
-        $file = file_get_contents($remote_url, false, $context);
-
-        print($file);
 
     }
 }

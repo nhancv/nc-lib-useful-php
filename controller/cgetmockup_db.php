@@ -1,6 +1,5 @@
 <?php  
 header("Content-Type: text/html;charset=UTF-8");
-// array for JSON response
 $response = array();
 require_once dirname(__FILE__) . '/function/json_encode_utf8.php';
 require_once dirname(__FILE__) . '/controller.php';

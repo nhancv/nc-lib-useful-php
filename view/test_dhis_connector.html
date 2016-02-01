@@ -3,9 +3,28 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>Test DHIS connector</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" media="screen">
+    <link rel="stylesheet" href="css/style.css" type="text/css" media="screen">
     <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/tableauwdc-1.1.0.js"></script>
     <script>
+        function show_alert(elem, message, timeout) {
+            $(elem).html('<strong>Warning!</strong> Required field(s) is missing: ' + message);
+            $(elem).fadeTo(timeout, 500).slideUp(500, function () {
+                $(elem).hide();
+            });
+        }
+
+        jQuery.fn.extend({
+            disable: function (state) {
+                return this.each(function () {
+                    var $this = $(this);
+                    $this.attr('disabled', state);
+                });
+            }
+        });
+
         (function () {
 
             var myConnector = tableau.makeConnector();
@@ -38,15 +57,100 @@
             retrieveDataCallback(JSON.parse(tableau.connectionData));
         }
 
-        function getBasicAu() {
+        function showStatus(status) {
+            if (status === true) {
+                $("#progressbar").show();
+                $("#btnSubmit").disable(true);
+                $("#btnGetFasterEx").disable(true);
+            } else {
+                $("#progressbar").hide();
+                $("#btnSubmit").disable(false);
+                $("#btnGetFasterEx").disable(false);
+            }
+        }
+        function btnSubmit() {
+            var urlOrigin = $("#url").val().replace(".html", ".json");
+            var username = $("#username").val();
+            var password = $("#password").val();
+
+            if (typeof urlOrigin === 'undefined' || urlOrigin.trim() == '') {
+                show_alert('#form_errors', 'Url api', 1000);
+                return;
+            }
+
+            if (typeof username === 'undefined' || username.trim() == '') {
+                show_alert('#form_errors', 'Username', 1000);
+                return;
+            }
+
+            if (typeof password === 'undefined' || password.trim() == '') {
+                show_alert('#form_errors', 'Password', 1000);
+                return;
+            }
+
+            showStatus(true);
+
             var form_data = {
-                url: "http://178.79.144.205:9080/dhis_scale/api/analytics?dimension=dx:-1;m4l6dkZE3Tb;PAf747u9aIm;BHbkFDZuQCv;egvQwyhTts0;jM9CwghARC1;Umgf9D3eTeg&filter=pe:-1;201404;201405&dimension=ou:-1;oxN3xXclTRE;pTRU2S7lfqh;vq35KBJgWNw;JMsKdUoy81t;fOnIc7JXX27;OwM7KfY9nkh;dU4n3GrNwaj;nbBQtsv2YQq;ZCRpMKQM7eW;P3JQpPI8wmi;z79RFezryPa;a7spx96Mmes;qH6uzfI6648;KWCXB07lM1N;T5vmOf1Cx0U;XDpbaCd3w9w;OCD615gl2y1;zkV6pxczaCF;jlinpH2sARR;RkSp1KAwG99;mm1Eqiu33TX;efohxmoicar;Y9PJfx2ullk;X3ppq91QGe5;NMyXnDEhScT;FQylqKS8jUm;daw9uBBcaLB;yqePPTMv1Y5;pMJj8wMUEqa;iPNWmV489sc&includeDescendants=true",
+                url: urlOrigin,
+                u: username,
+                p: password
+            };
+            $.ajax({
+                type: 'POST',
+                url: "../mbasic_au.php",
+                dataType: 'json',
+                data: form_data,
+                cache: false
+            })
+                    .done(function (response) {
+                        console.log(response);
+                        var jsonStr = response;
+
+                        if (jsonStr.hasOwnProperty("message")) {
+                            show_alert('#form_errors', jsonStr.message, 1000);
+                            showStatus(false);
+                            return;
+                        }
+
+                        var headerNameArr = [];
+                        var headerTypesArr = [];
+                        var dataTables = [];
+                        for (var i = 0; i < jsonStr.headers.length; i++) {
+                            var name = jsonStr.headers[i].name;
+                            var type = (jsonStr.headers[i].type).toLowerCase().replace("java.lang.", "").replace("double", "float");
+                            headerNameArr.push(name);
+                            headerTypesArr.push(type);
+                        }
+
+                        var realLength = jsonStr.rows.length;
+                        for (var i = 0; i < jsonStr.rows.length; i++) {
+                            var item = []
+                            for (var j = 0; j < jsonStr.rows[i].length; j++) {
+                                item.push(jsonStr.rows[i][j]);
+                            }
+                            dataTables.push(item);
+                        }
+
+                        var header = {"names": headerNameArr, types: headerTypesArr};
+                        var conData = {"header": header, "rowData": dataTables};
+
+                        showStatus(false);
+
+                        tableau.connectionData = JSON.stringify(conData);
+                        tableau.submit();
+                    })
+        }
+
+        function btnGetFasterEx() {
+            showStatus(true);
+
+            var form_data = {
                 u: "admin",
                 p: "district"
             };
             $.ajax({
                 type: 'POST',
-                url: "../mbasic_au.php",
+                url: "../controller/cgetmockup_db.php",
                 dataType: 'json',
                 data: form_data,
                 cache: false
@@ -74,22 +178,49 @@
                         var header = {"names": headerNameArr, types: headerTypesArr};
                         var conData = {"header": header, "rowData": dataTables};
 
+                        showStatus(false);
+
                         tableau.connectionData = JSON.stringify(conData);
                         tableau.submit();
-
                     })
         }
     </script>
 </head>
 <body>
-<p>
-    
-</p>
 <br>
 
-<button id="btnJSCal" onclick="getBasicAu();">Get example</button>
-<br>
+<div id="ipform" role="form">
 
+    <div class="form-group">
+        <label for="email">Api url report(*):<br>
+            Goto
+            <a href="https://play.dhis2.org/demo/dhis-web-pivot/">https://play.dhis2.org/demo/dhis-web-pivot/</a><br>
+            -> Favorites -> Choose one example -> Share -> Api link
+        </label>
+        <input type="url" class="form-control" id="url"
+               placeholder="https://play.dhis2.org/demo/api/reportTables/tWg9OiyV7mu/data.json">
+    </div>
+    <div class="form-group">
+        <label for="pwd">Username(*):</label>
+        <input type="username" class="form-control" style="width: 200px" id="username">
+    </div>
+    <div class="form-group">
+        <label for="pwd">Password(*):</label>
+        <input type="password" class="form-control" style="width: 200px" id="password">
+    </div>
+    <button id="btnSubmit" class="btn btn-default" onclick="btnSubmit();">Submit</button>
+    <br>
+    <br>
+    <hr>
+    <label>Or Click button below to get faster an example (don't need to fill that form)</label>
+    <button id="btnGetFasterEx" class="btn btn-info" onclick="btnGetFasterEx();">Get faster Example</button>
+    <br><br>
 
+    <div id="form_errors" class="alert alert-danger" style="display:none"></div>
+    <div class="progress" id="progressbar" style="display:none;">
+        <div class="progress-bar progress-bar-striped active" role="progressbar" style="width:100%">
+        </div>
+    </div>
+</div>
 </body>
 </html>
