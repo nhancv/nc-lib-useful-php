@@ -1,5 +1,6 @@
 <?php  
 header("Content-Type: text/html;charset=UTF-8");
+header('Access-Control-Allow-Origin: *');
 // array for JSON response
 $response = array();
 require_once dirname(__FILE__) . '/controller/function/json_encode_utf8.php';
